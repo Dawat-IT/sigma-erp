@@ -1,0 +1,44 @@
+{
+  "name": "sigma-elevator-erp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test:crud": "node scripts/verify-db-crud.mjs",
+    "test:amounts": "node scripts/verify-amounts.mjs"
+  },
+  "dependencies": {
+    "@gsap/react": "^2.1.2",
+    "bcryptjs": "^3.0.3",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "exceljs": "^4.4.0",
+    "gsap": "^3.15.0",
+    "jose": "^6.2.4",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
+    "lucide-react": "^1.27.0",
+    "mongoose": "^9.8.1",
+    "next": "16.2.12",
+    "next-intl": "^4.13.4",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "recharts": "^3.10.1",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.12",
+    "mongodb-memory-server": "^11.2.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
