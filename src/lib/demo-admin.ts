@@ -91,6 +91,12 @@ export async function resolveLoginUser(email: string, password: string) {
   const loginId = normalizeLoginId(email);
   let user = await User.findOne({ email: loginId });
 
+  // Public deployments only accept the actual stored account password.
+  if (process.env.NODE_ENV === "production") {
+    if (!user?.passwordHash) return null;
+    return (await verifyPassword(password, user.passwordHash)) ? user : null;
+  }
+
   if (!user && isDemoAdminIdentity(loginId)) {
     user = await findDemoAdmin();
   } else if (!user && isDemoManagerIdentity(loginId)) {

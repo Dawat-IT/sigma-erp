@@ -49,3 +49,8 @@ next-env.d.ts
 
 scripts/ui-shots/
 .env*
+!.env.example
+env.local.download
+*.log
+release/
+release.tar.gz

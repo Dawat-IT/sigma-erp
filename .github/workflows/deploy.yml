@@ -1,0 +1,105 @@
+name: CI and VPS deployment
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sigma-erp-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mongo:
+        image: mongo:8
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'quit(db.adminCommand({ping:1}).ok ? 0 : 1)'"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+        env:
+          MONGOMS_DISABLE_POSTINSTALL: '1'
+      - name: Existing application lint report (advisory)
+        run: npm run lint -- --quiet
+        continue-on-error: true
+      - name: Check deployment-related TypeScript
+        run: npx eslint src/app/api/health/route.ts src/lib/demo-admin.ts src/proxy.ts
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Package standalone production server
+        run: |
+          mkdir -p release/app/.next
+          cp -a .next/standalone/. release/app/
+          cp -a .next/static release/app/.next/static
+          cp -a public release/app/public
+          cp deploy/ecosystem.config.cjs release/
+          cp deploy/bootstrap-admin.cjs release/app/
+          cp deploy/deploy.sh release/
+          tar -czf release.tar.gz -C release .
+      - name: Test production health and authentication
+        run: node scripts/verify-production.mjs
+        env:
+          MONGODB_URI: mongodb://127.0.0.1:27017/sigma_ci
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          name: sigma-erp-${{ github.sha }}
+          path: release.tar.gz
+          retention-days: 7
+          if-no-files-found: error
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.VPS_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: sigma-erp-${{ github.sha }}
+      - name: Configure verified SSH connection
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          test -n "$SSH_KEY" && test -n "$KNOWN_HOSTS" && test -n "$VPS_HOST" && test -n "$VPS_USER"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+          [[ "$VPS_HOST" =~ ^[a-zA-Z0-9.-]+$ ]] && [[ "$VPS_USER" =~ ^[a-zA-Z_][a-zA-Z0-9_-]*$ ]]
+          port=${VPS_PORT:-22}
+          [[ "$port" =~ ^[0-9]+$ ]]
+          printf 'Host production\n  HostName %s\n  User %s\n  Port %s\n  IdentityFile ~/.ssh/id_ed25519\n  IdentitiesOnly yes\n  BatchMode yes\n  StrictHostKeyChecking yes\n' "$VPS_HOST" "$VPS_USER" "$port" >> ~/.ssh/config
+      - name: Deploy tested release
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          ssh production 'test -d /opt/sigma-erp && test -s /opt/sigma-erp/.env && pm2 --version'
+          scp release.tar.gz "production:/opt/sigma-erp/incoming-$RELEASE_SHA.tar.gz"
+          ssh production "bash -s -- '$RELEASE_SHA'" < deploy/deploy.sh
+      - name: Remove runner SSH credentials
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519

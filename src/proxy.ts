@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { seedBootstrapHeaderOk } from "@/lib/seed-guard";
 
-const PUBLIC = ["/login", "/api/auth/login", "/api/locale", "/api/favicon"];
+const PUBLIC = ["/login", "/api/auth/login", "/api/locale", "/api/favicon", "/api/health"];
 
 export default async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;

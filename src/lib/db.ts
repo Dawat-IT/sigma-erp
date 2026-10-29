@@ -24,6 +24,9 @@ global.mongooseCache = cached;
 async function resolveMongoUri() {
   const configured = process.env.MONGODB_URI?.trim();
   const onVercel = Boolean(process.env.VERCEL);
+  if (process.env.NODE_ENV === "production" && (!configured || configured === "memory" || process.env.USE_MEMORY_MONGO === "1")) {
+    throw new Error("MONGODB_URI is required: production cannot use an in-memory database");
+  }
   const useMemory =
     !onVercel &&
     (!configured ||

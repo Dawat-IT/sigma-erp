@@ -269,6 +269,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (String(process.env.NODE_ENV) === "production") {
+    return NextResponse.json({ error: "demo_seed_disabled" }, { status: 403 });
+  }
   try {
     const session = await readSession();
     const body = await req.json().catch(() => ({}));

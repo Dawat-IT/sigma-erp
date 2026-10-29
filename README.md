@@ -57,6 +57,8 @@ For local demo without Docker you can use `MONGODB_URI=memory` (data resets when
 
 ## Deploy (Vercel)
 
+For the Dipto Bro VPS and automatic GitHub deployment, see [deploy/README.md](deploy/README.md).
+
 1. Push this repo to GitHub
 2. Import in [Vercel](https://vercel.com/new)
 3. Set environment variables (`MONGODB_URI`, `AUTH_SECRET`, …)
