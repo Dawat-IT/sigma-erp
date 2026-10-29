@@ -12,6 +12,7 @@ release="$root/releases/$sha"
 mkdir -p "$release"
 tar -xzf "$root/incoming-$sha.tar.gz" -C "$release" --no-same-owner
 previous=$(readlink -f "$root/current" 2>/dev/null || true)
+health_path=$(node --env-file="$root/.env" -e 'process.stdout.write(process.env.MONGODB_URI?.trim() ? "/api/health" : "/api/health/live")')
 start_release() {
   local directory=$1
   if pm2 describe sigma-erp >/dev/null 2>&1; then pm2 delete sigma-erp; fi
@@ -20,7 +21,7 @@ start_release() {
 healthy() {
   local attempt
   for attempt in {1..45}; do
-    if curl --fail --silent --max-time 3 http://127.0.0.1:3100/api/health >/dev/null; then return 0; fi
+    if curl --fail --silent --max-time 3 "http://127.0.0.1:3100$health_path" >/dev/null; then return 0; fi
     sleep 2
   done
   return 1

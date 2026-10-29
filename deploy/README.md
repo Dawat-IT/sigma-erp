@@ -9,6 +9,12 @@ required on the VPS. MongoDB must be persistent: use Atlas or a separately
 provisioned authenticated MongoDB service. Database provisioning is separate from
 application deployment. Never use `MONGODB_URI=memory` in production.
 
+The initial deployment is explicitly allowed without MongoDB. With an empty
+`MONGODB_URI`, the login page and `/api/health/live` work, while database readiness
+(`/api/health`) and login/data operations return 503. Deployment checks liveness
+when the URI is empty and database readiness once a URI is configured. CI tests
+both modes. No temporary production database or demo login is enabled.
+
 ## Server setup
 
 Create `/opt/sigma-erp/releases` and `/opt/sigma-erp/.env` from

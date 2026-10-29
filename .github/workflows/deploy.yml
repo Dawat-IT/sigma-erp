@@ -41,7 +41,7 @@ jobs:
         run: npm run lint -- --quiet
         continue-on-error: true
       - name: Check deployment-related TypeScript
-        run: npx eslint src/app/api/health/route.ts src/lib/demo-admin.ts src/proxy.ts
+        run: npx eslint src/app/api/health src/lib/demo-admin.ts src/proxy.ts
       - run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
@@ -59,6 +59,8 @@ jobs:
         run: node scripts/verify-production.mjs
         env:
           MONGODB_URI: mongodb://127.0.0.1:27017/sigma_ci
+      - name: Test deployment without a database
+        run: node scripts/verify-no-database.mjs
       - uses: actions/upload-artifact@v4
         if: github.event_name != 'pull_request'
         with:
