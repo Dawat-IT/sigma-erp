@@ -51,6 +51,7 @@ jobs:
           cp -a .next/standalone/. release/app/
           cp -a .next/static release/app/.next/static
           cp -a public release/app/public
+          cp -a node_modules/bcryptjs release/app/node_modules/bcryptjs
           cp deploy/ecosystem.config.cjs release/
           cp deploy/bootstrap-admin.cjs release/app/
           cp deploy/deploy.sh release/

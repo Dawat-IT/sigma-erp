@@ -13,6 +13,7 @@ export const BRAND = {
   logoMark: "R",
   logoMarkFull: "ROYAL GROUP",
   demoEmail: "admin@royalgroup.bd",
+  adminLoginEmail: "admin@royal.dawatit.online",
   demoPassword: "admin123",
   demoManagerEmail: "manager@royalgroup.bd",
   demoManagerPassword: "manager123",

@@ -28,9 +28,13 @@ try {
     await delay(1000);
   }
   assert(healthy, "Production database health check failed");
-  assert.equal((await fetch(`${base}/login`)).status, 200);
+  const loginPage = await fetch(`${base}/login`);
+  assert.equal(loginPage.status, 200);
+  const loginHtml = await loginPage.text();
+  assert(loginHtml.includes("admin@royal.dawatit.online"), "Production admin selector must use the new identity");
+  assert(!loginHtml.includes("manager@royalgroup.bd"), "Production must hide the demo manager shortcut");
   assert.equal((await login("admin@royalgroup.bd", "admin123")).status, 401);
-  const bootstrap = spawn(process.execPath, ["deploy/bootstrap-admin.cjs"], { env, stdio: "inherit" });
+  const bootstrap = spawn(process.execPath, ["release/app/bootstrap-admin.cjs"], { env, stdio: "inherit" });
   const exitCode = await new Promise((resolve, reject) => {
     bootstrap.on("error", reject);
     bootstrap.on("exit", resolve);

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import {
@@ -32,6 +32,9 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [accountHint, setAccountHint] = useState("");
+  const passwordInput = useRef<HTMLInputElement>(null);
+  const demoMode = process.env.NODE_ENV !== "production";
 
   async function signIn(nextEmail: string, nextPassword: string) {
     setLoading(true);
@@ -53,7 +56,7 @@ export default function LoginPage() {
         }
         return;
       }
-      await fetch("/api/seed", {
+      if (demoMode) await fetch("/api/seed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: "{}",
@@ -73,6 +76,17 @@ export default function LoginPage() {
   }
 
   function fillDemo(targetRole: "admin" | "manager" = "admin") {
+    if (!demoMode) {
+      setEmail(BRAND.adminLoginEmail);
+      setError("");
+      if (password) {
+        void signIn(BRAND.adminLoginEmail, password);
+      } else {
+        setAccountHint(bn ? "অ্যাডমিন নির্বাচন করা হয়েছে। আপনার পাসওয়ার্ড লিখুন।" : "Admin selected. Enter your password.");
+        passwordInput.current?.focus();
+      }
+      return;
+    }
     if (targetRole === "manager") {
       void signIn(BRAND.demoManagerEmail, BRAND.demoManagerPassword);
     } else {
@@ -254,7 +268,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="username"
-                  placeholder={BRAND.demoEmail}
+                  placeholder={demoMode ? BRAND.demoEmail : BRAND.adminLoginEmail}
                   required
                 />
               </span>
@@ -265,6 +279,7 @@ export default function LoginPage() {
                 <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--gp-primary-light)]" />
                 <input
                   type={showPassword ? "text" : "password"}
+                  ref={passwordInput}
                   className="gp-input gp-input-icon-both"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -285,15 +300,17 @@ export default function LoginPage() {
             {error ? (
               <p className="erp-login-error">{error}</p>
             ) : null}
+            {accountHint && !error ? <p role="status" className="erp-login-hint">{accountHint}</p> : null}
             <button type="submit" disabled={loading} className="gp-btn gp-btn-primary erp-login-submit">
               {loading ? t("auth.loggingIn") : t("auth.login")}
               {!loading ? <ArrowRight className="h-4 w-4" /> : null}
             </button>
           </div>
 
-          <div className="mt-2.5 grid grid-cols-2 gap-2">
+          <div className={`mt-2.5 grid gap-2 ${demoMode ? "grid-cols-2" : "grid-cols-1"}`}>
             <button
               type="button"
+              disabled={loading}
               onClick={() => fillDemo("admin")}
               className="erp-login-demo !mt-0 p-2 hover:border-blue-400/50 hover:bg-blue-500/10 transition-all text-left"
             >
@@ -304,11 +321,11 @@ export default function LoginPage() {
                 </span>
               </div>
               <div className="mt-1 text-[11px] leading-tight text-slate-300 font-mono truncate">
-                {BRAND.demoEmail}
+                {demoMode ? BRAND.demoEmail : BRAND.adminLoginEmail}
               </div>
             </button>
 
-            <button
+            {demoMode ? <button
               type="button"
               onClick={() => fillDemo("manager")}
               className="erp-login-demo !mt-0 p-2 hover:border-emerald-400/50 hover:bg-emerald-500/10 transition-all text-left"
@@ -322,7 +339,7 @@ export default function LoginPage() {
               <div className="mt-1 text-[11px] leading-tight text-slate-300 font-mono truncate">
                 {BRAND.demoManagerEmail}
               </div>
-            </button>
+            </button> : null}
           </div>
 
           <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-[#9eb0c7]">
