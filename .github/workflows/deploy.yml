@@ -20,7 +20,9 @@ jobs:
     timeout-minutes: 20
     services:
       mongo:
-        image: mongo:8
+        # MongoDB 7 supports the hosted runner's current kernel.
+        # https://jira.mongodb.org/browse/SERVER-125742
+        image: mongo:7.0
         ports:
           - 27017:27017
         options: >-
